@@ -1,0 +1,40 @@
+config {
+  type: "table",
+    description: "This table joins orders information from Shopify & payment information from Stripe",
+  columns: {
+    order_date: "The date when a customer placed their order",
+    id: "Order ID as defined by Shopify",
+    order_status: "The status of an order e.g. sent, delivered",
+    customer_id: "Unique customer ID",
+    payment_status: "The status of a payment e.g. pending, paid",
+    payment_method: "How the customer chose to pay",
+    item_count: "The number of items the customer ordered",
+    amount: "The amount the customer paid"
+  },
+    assertions: {
+    uniqueKey: ["id"]
+  }
+}
+
+SELECT
+  orders.date AS order_date,
+  orders.id AS id,
+  orders.customer_id AS customer_id,
+  orders.status AS order_status,
+  charges.status AS payment_status,
+  charges.payment_method AS payment_method,
+  SUM(orders.item_count) AS item_count,
+  SUM(charges.amount) AS amount
+
+FROM
+  dataform-demos.dataform_tutorial.shopify_orders AS orders
+  LEFT JOIN dataform-demos.dataform_tutorial.stripe_payments AS charges
+    ON orders.payment_id = charges.id
+
+WHERE
+  orders.id <= 999
+  AND orders.item_count > 0
+  AND orders.status <> 'internal'
+  AND charges.payment_method IN ('debit_card', 'subscription', 'coupon')
+
+GROUP BY 1, 2, 3, 4, 5, 6
