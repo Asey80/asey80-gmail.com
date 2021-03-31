@@ -3,18 +3,7 @@
     {
       "name": "production",
       "configOverride": {},
-      "schedules": [
-        {
-          "name": "hourly_update",
-          "cron": "3 */1 * * *"
-        }
-      ],
       "gitRef": "master"
-    }
-  ],
-  "notificationChannels": [
-    {
-      "name": "email"
     }
   ]
 }
