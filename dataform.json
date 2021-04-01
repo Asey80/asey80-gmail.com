@@ -2,5 +2,11 @@
     "warehouse": "bigquery",
     "defaultSchema": "dataform",
     "assertionSchema": "dataform_assertions",
-    "defaultDatabase": "dwh-sandbox-309207"
+    "defaultDatabase": "dwh-sandbox-309207",
+    "vars": {
+        "bucket_path": "gs://dwh-sandbox-309207-bucket/",
+        "stg_dataset_name": "stg",
+        "external_dataset_name": "ext",
+        "ep_dataset_name": "ep"
+    }
 }

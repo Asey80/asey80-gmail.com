@@ -1,0 +1,112 @@
+config {
+  type: "table",
+  schema: "ep",
+  name: "sales_prod_grp_basket",
+  tags: ["sales_prod_grp_basket"]
+}
+
+
+select
+
+	g.outlet_id,
+	g.date_id,
+	g.curr_id,
+	g.prod_grp_id,
+	g.prod_count,
+	g.sales_qty,
+	g.sales_val,
+	g.sales_val_net,
+	g.sales_roi_val,
+	h.prod_grp_id2,
+	h.prod_count as prod_count_h,
+	h.sales_qty as sales_qty_h,
+	h.sales_val as sales_val_h,
+	h.sales_val_net as sales_val_net_h,
+	h.sales_roi_val as sales_roi_val_h
+
+from	(
+
+	select
+
+		outlet_id,
+		date_id,
+		prod_grp_id,
+		curr_id,
+		sum(prod_count) as prod_count,
+		sum(sales_qty) as sales_qty,
+		sum(sales_val) as sales_val,
+		sum(sales_val_net) as sales_val_net,
+		sum(sales_roi_val) as sales_roi_val
+
+	from	${ref("v_sales_prod_grp_basket")} c
+
+	group by 1,2,3,4
+
+	) g
+
+inner join	(
+
+	select
+
+		s1.outlet_id,
+		s1.date_id,
+		s1.prod_grp_id as prod_grp_id1,
+		s2.prod_grp_id as prod_grp_id2,
+		s1.curr_id,
+		sum(s2.prod_count) as prod_count,
+		sum(s2.sales_qty) as sales_qty,
+		sum(s2.sales_val) as sales_val,
+		sum(s2.sales_val_net) as sales_val_net,
+		sum(s2.sales_roi_val) as sales_roi_val
+
+	from	(
+
+		select
+
+			outlet_id,
+			date_id,
+			customer_no,
+			prod_grp_id,
+			curr_id,
+			sum(prod_count) as prod_count
+
+		from ${ref("v_sales_prod_grp_basket")} c
+
+		group by 1,2,3,4,5 )
+
+		s1
+
+	inner join	(
+
+		select
+
+			outlet_id,
+			date_id,
+			customer_no,
+			prod_grp_id,
+			curr_id,
+			sum(prod_count) as prod_count,
+			sum(sales_qty) as sales_qty,
+			sum(sales_val) as sales_val,
+			sum(sales_val_net) as sales_val_net,
+			sum(sales_roi_val) as sales_roi_val
+
+		from ${ref("v_sales_prod_grp_basket")} c
+
+		group by 1,2,3,4,5
+
+		) s2
+
+	on	s1.outlet_id = s2.outlet_id
+	and	s1.date_id = s2.date_id
+	and	s1.customer_no = s2.customer_no
+	and	s1.curr_id = s2.curr_id
+
+	group by 1,2,3,4,5
+
+	) h
+
+on	g.outlet_id = h.outlet_id
+and	g.date_id = h.date_id
+and	g.curr_id = h.curr_id
+and	g.prod_grp_id = h.prod_grp_id1

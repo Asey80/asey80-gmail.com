@@ -1,5 +1,6 @@
 config {
   type: "table",
+  disabled: true,
     description: "This table joins orders information from Shopify & payment information from Stripe",
   columns: {
     order_date: "The date when a customer placed their order",

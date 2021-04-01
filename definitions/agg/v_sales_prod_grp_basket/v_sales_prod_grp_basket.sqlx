@@ -1,0 +1,64 @@
+config {
+  type: "view",
+  schema: "ep",
+  name: "v_sales_prod_grp_basket",
+  tags: ["v_sales_prod_grp_basket"]
+}
+
+ select
+  a.outlet_id,
+  a.date_id,
+  a.prod_id as prod_grp_id,
+  a.curr_id,
+  sum(a.sales_qty) AS sales_qty,
+  sum(a.sales_val) AS sales_val,
+  sum(a.sales_val_net) AS sales_val_net,
+  sum(a.sales_roi_val) AS sales_roi_val,
+  sum(a.sales_org_val) AS sales_org_val,
+  sum(a.sales_bonus) AS sales_bonus,
+  sum(a.sales_last_invoice_val) AS sales_last_invoice_val,
+  sum(a.rc_tax_val) AS rc_tax_val,
+  1 AS prod_count,
+  b.customer_no
+
+from 	(
+with tbl as (
+	select
+		outlet_id,
+		prod_id,
+		date_id,
+		curr_id,
+		rcpt_no,
+		cash_reg_no,
+		sum(sales_qty) as sales_qty,
+		sum(sales_val) as sales_val,
+		sum(sales_val_net) as sales_val_net,
+		sum(sales_roi_val) as sales_roi_val,
+		sum(sales_org_val) as sales_org_val,
+		sum(sales_bonus) as sales_bonus,
+		sum(sales_last_invoice_val) as sales_last_invoice_val,
+		sum(rc_tax_val) as rc_tax_val
+
+	from ${ref("sales")} a
+	group by 1,2,3,4,5,6)
+
+select * from tbl where sales_qty > 0
+	) a
+
+
+inner join
+
+(select
+   outlet_id,
+   date_id,
+   cash_reg_no,
+   rcpt_no,
+   max(  cash_reg_no  + (rcpt_no*1000) + (CAST(FORMAT_DATE("%Y%m%d", date_id) AS INT64) * 100000000) + (cast(outlet_id as numeric) * 10000000000000)) as customer_no
+  from  ${ref("sales")}
+  group by 1,2,3,4) b
+
+on	a.outlet_id=b.outlet_id
+and	a.date_id=b.date_id
+and	a.cash_reg_no=b.cash_reg_no
+and	a.rcpt_no=b.rcpt_no
+group by 1,2,3,4,13,14

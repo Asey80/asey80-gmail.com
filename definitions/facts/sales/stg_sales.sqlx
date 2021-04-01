@@ -1,0 +1,123 @@
+config {
+  type: "view",
+  tags: ["sales"]
+}
+
+js {
+  const table_name = name();
+  const file_name = `${table_name}`.toUpperCase().split('_')[1];
+}
+
+pre_operations {
+CREATE SCHEMA IF NOT EXISTS ${dataform.projectConfig.vars.external_dataset_name};
+CREATE SCHEMA IF NOT EXISTS ${dataform.projectConfig.vars.stg_dataset_name};
+
+execute immediate """
+CREATE OR REPLACE EXTERNAL TABLE ${dataform.projectConfig.vars.external_dataset_name}.${table_name} (
+OUTLET_ID int64,
+DATE_ID date,
+PROD_ID int64,
+HOUR_ID int64,
+DEPOT_ID int64,
+SALES_TYP_ID int64,
+SALESMAN_ID int64,
+SALES_TIME int64,
+VOUCHER_NO int64,
+SET_NO numeric,
+CASH_REG_NO int64,
+RCPT_NO int64,
+ZIP string,
+CURR_ID int64,
+SALES_QTY int64,
+SALES_VAL numeric,
+SALES_VAL_NET numeric,
+SALES_ROI_VAL numeric,
+SALES_ORG_VAL numeric,
+SALES_BONUS numeric,
+SALES_LAST_INVOICE_VAL numeric,
+RC_TAX_VAL numeric,
+PROD_TYP_ID string,
+DISCOUNT_ID int64,
+PROD_MARK_1 string,
+PROD_MARK_2 string,
+PROD_MARK_3 string,
+BOOKING_KEY_ID string,
+VAT_ID int64,
+RANGE_MARK string,
+PHASEOUT_MARK string,
+SALES_STATUS string,
+SERIAL_NO string,
+SALES_PRICE_MANUAL numeric,
+SALES_CAMPAIGN_DISCOUNT_ID int64,
+SALES_ORDER_NO string,
+SOURCE_OUTLET_ID int64,
+DWH_ONLINE_FLAG int64,
+ACTIVATION_DATE_ID date,
+LOYALTY_ID int64,
+SRC_CUST_CODE string,
+SRC_PROD_CODE string,
+SRC_RCPT_CODE string,
+SRC_CURR_ID string,
+SRC_VAT_ID string,
+NUMMER int64
+) options (
+format = 'CSV',
+uris = ["""||
+    (SELECT string_agg('\'${dataform.projectConfig.vars.bucket_path}'||u||'/${file_name}_Cp1252_*.dat\'', """, """)
+        from unnest(GENERATE_DATE_ARRAY(current_date()-499, current_date())) u)||"""],
+field_delimiter = '|',
+max_bad_records = 0
+)""";
+}
+
+select
+    OUTLET_ID,
+    DATE_ID,
+    PROD_ID,
+    HOUR_ID,
+    DEPOT_ID,
+    SALES_TYP_ID,
+    SALESMAN_ID,
+    SALES_TIME,
+    VOUCHER_NO,
+    SET_NO,
+    CASH_REG_NO,
+    RCPT_NO,
+    nullif(trim(ZIP), '') as ZIP,
+    CURR_ID,
+    SALES_QTY,
+    SALES_VAL,
+    SALES_VAL_NET,
+    SALES_ROI_VAL,
+    SALES_ORG_VAL,
+    SALES_BONUS,
+    SALES_LAST_INVOICE_VAL,
+    RC_TAX_VAL,
+    nullif(trim(PROD_TYP_ID), '') as PROD_TYP_ID,
+    DISCOUNT_ID,
+    nullif(trim(PROD_MARK_1), '') as PROD_MARK_1,
+    nullif(trim(PROD_MARK_2), '') as PROD_MARK_2,
+    nullif(trim(PROD_MARK_3), '') as PROD_MARK_3,
+    nullif(trim(BOOKING_KEY_ID), '') as BOOKING_KEY_ID,
+    VAT_ID,
+    nullif(trim(RANGE_MARK), '') as RANGE_MARK,
+    nullif(trim(PHASEOUT_MARK), '') as PHASEOUT_MARK,
+    nullif(trim(SALES_STATUS), '') as SALES_STATUS,
+    nullif(trim(SERIAL_NO), '') as SERIAL_NO,
+    SALES_PRICE_MANUAL,
+    SALES_CAMPAIGN_DISCOUNT_ID,
+    SALES_ORDER_NO,
+    SOURCE_OUTLET_ID,
+    DWH_ONLINE_FLAG,
+    ACTIVATION_DATE_ID,
+    LOYALTY_ID,
+    nullif(trim(SRC_CUST_CODE), '') as SRC_CUST_CODE,
+    nullif(trim(SRC_PROD_CODE), '') as SRC_PROD_CODE,
+    nullif(trim(SRC_RCPT_CODE), '') as SRC_RCPT_CODE,
+    nullif(trim(SRC_CURR_ID), '') as SRC_CURR_ID,
+    nullif(trim(SRC_VAT_ID), '') as SRC_VAT_ID,
+    NUMMER,
+    _FILE_NAME file_name,
+    cast(REGEXP_EXTRACT(_FILE_NAME, r'(?:_)([0-9]+-[0-9]+-[0-9]+)(?:\.dat)') as date) FILE_DATE_ID,
+    cast(REGEXP_EXTRACT(_FILE_NAME, r'(?:_Cp1252_)([0-9]+)(?:_[0-9]+-[0-9]+-[0-9]+\.dat)') as int64) FILE_OUTLET_ID
+from ${dataform.projectConfig.vars.external_dataset_name}.${table_name}
