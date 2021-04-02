@@ -4,8 +4,7 @@ config {
   name: "sales",
   tags: ["sales"],
   bigquery: {
-    partitionBy: "DATE_ID",
-
+    partitionBy: "DATE_ID"
   }
 }
 
@@ -63,7 +62,9 @@ SELECT
   CURRENT_TIMESTAMP() as INS_TIME
 FROM ${ref("stg_sales")} S
 
-${when(incremental(), `where S.FILE_DATE_ID > (select max(DATE_ID) from ${self()})`)}
+${ when(incremental(), `where S.FILE_DATE_ID > (select max(DATE_ID) from ${self()})`) }
+-- ${ep_reload_check_fnc.reloadCheck(constants.snapshot_dates, constants.outlet_ids, self() )}
+
 
 
 
