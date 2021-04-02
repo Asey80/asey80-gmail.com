@@ -1,17 +1,70 @@
 config {
-  type: "incremental",
+  type: "operations",
   schema: "ep",
   name: "sales",
   tags: ["sales"],
-  bigquery: {
-    partitionBy: "DATE_ID"
-  }
+  hasOutput: true
 }
 
-pre_operations {
-CREATE SCHEMA IF NOT EXISTS ${dataform.projectConfig.vars.ep_dataset_name};
+js {
+  const TempTableName = `${name()}_temp`;
 }
 
+declare partitions_for_replacement array<date>;
+
+ -- create ep table
+CREATE TABLE IF NOT EXISTS ${self()} (
+    OUTLET_ID int64,
+    DATE_ID date,
+    PROD_ID int64,
+    HOUR_ID int64,
+    DEPOT_ID int64,
+    SALES_TYP_ID int64,
+    SALESMAN_ID int64,
+    SALES_TIME int64,
+    VOUCHER_NO int64,
+    SET_NO numeric,
+    CASH_REG_NO int64,
+    RCPT_NO int64,
+    ZIP string,
+    CURR_ID int64,
+    SALES_QTY int64,
+    SALES_VAL numeric,
+    SALES_VAL_NET numeric,
+    SALES_ROI_VAL numeric,
+    SALES_ORG_VAL numeric,
+    SALES_BONUS numeric,
+    SALES_LAST_INVOICE_VAL numeric,
+    RC_TAX_VAL numeric,
+    PROD_TYP_ID string,
+    DISCOUNT_ID int64,
+    PROD_MARK_1 string,
+    PROD_MARK_2 string,
+    PROD_MARK_3 string,
+    BOOKING_KEY_ID string,
+    VAT_ID int64,
+    RANGE_MARK string,
+    PHASEOUT_MARK string,
+    SALES_STATUS string,
+    SERIAL_NO string,
+    SALES_PRICE_MANUAL numeric,
+    SALES_CAMPAIGN_DISCOUNT_ID int64,
+    SALES_ORDER_NO string,
+    SOURCE_OUTLET_ID int64,
+    DWH_ONLINE_FLAG int64,
+    ACTIVATION_DATE_ID date,
+    LOYALTY_ID int64,
+    SRC_CUST_CODE string,
+    FILE_NAME STRING,
+    INS_TIME TIMESTAMP
+)
+partition by DATE_ID;
+
+
+/*
+  Create a temporary table from the model SQL
+*/
+create temporary table ${TempTableName} partition by date_id as (
 SELECT
   S.OUTLET_ID,
   DATE_ID,
@@ -62,11 +115,32 @@ SELECT
   CURRENT_TIMESTAMP() as INS_TIME
 FROM ${ref("stg_sales")} S
 
-${ when(incremental(), `where S.FILE_DATE_ID > (select max(DATE_ID) from ${self()})`) }
--- ${ep_reload_check_fnc.reloadCheck(constants.snapshot_dates, constants.outlet_ids, self() )}
+-- where S.FILE_DATE_ID IN ('2021-01-27') and S.FILE_OUTLET_ID in (11,44)
+${ep_reload_check_fnc.reloadCheck(constants.snapshot_dates, constants.outlet_ids, self() )}
+) ;
 
+/*
+  If applicable, determine the partitions to overwrite by
+  querying the temp table.
+*/
+set (partitions_for_replacement) = (
+    select as struct
+        array_agg(distinct date(date_id))
+    from ${TempTableName}
+);
 
+/*
+  Overwrite partitions in the destination table which match
+  the partitions in the temporary table
+*/
+merge into ${self()} DEST
+using ${TempTableName} SRC
+on FALSE
 
+when not matched by source and date_id in unnest(partitions_for_replacement)
+then delete
 
+when not matched then 
+insert (`OUTLET_ID`,`DATE_ID`,`PROD_ID`,`HOUR_ID`,`DEPOT_ID`,`SALES_TYP_ID`,`SALESMAN_ID`,`SALES_TIME`,`VOUCHER_NO`,`SET_NO`,`CASH_REG_NO`,`RCPT_NO`,`ZIP`,`CURR_ID`,`SALES_QTY`,`SALES_VAL`,`SALES_VAL_NET`,`SALES_ROI_VAL`,`SALES_ORG_VAL`,`SALES_BONUS`,`SALES_LAST_INVOICE_VAL`,`RC_TAX_VAL`,`PROD_TYP_ID`,`DISCOUNT_ID`,`PROD_MARK_1`,`PROD_MARK_2`,`PROD_MARK_3`,`BOOKING_KEY_ID`,`VAT_ID`,`RANGE_MARK`,`PHASEOUT_MARK`,`SALES_STATUS`,`SERIAL_NO`,`SALES_PRICE_MANUAL`,`SALES_CAMPAIGN_DISCOUNT_ID`,`SALES_ORDER_NO`,`SOURCE_OUTLET_ID`,`DWH_ONLINE_FLAG`,`ACTIVATION_DATE_ID`,`LOYALTY_ID`,`SRC_CUST_CODE`,`FILE_NAME`,`INS_TIME`) values (`OUTLET_ID`,`DATE_ID`,`PROD_ID`,`HOUR_ID`,`DEPOT_ID`,`SALES_TYP_ID`,`SALESMAN_ID`,`SALES_TIME`,`VOUCHER_NO`,`SET_NO`,`CASH_REG_NO`,`RCPT_NO`,`ZIP`,`CURR_ID`,`SALES_QTY`,`SALES_VAL`,`SALES_VAL_NET`,`SALES_ROI_VAL`,`SALES_ORG_VAL`,`SALES_BONUS`,`SALES_LAST_INVOICE_VAL`,`RC_TAX_VAL`,`PROD_TYP_ID`,`DISCOUNT_ID`,`PROD_MARK_1`,`PROD_MARK_2`,`PROD_MARK_3`,`BOOKING_KEY_ID`,`VAT_ID`,`RANGE_MARK`,`PHASEOUT_MARK`,`SALES_STATUS`,`SERIAL_NO`,`SALES_PRICE_MANUAL`,`SALES_CAMPAIGN_DISCOUNT_ID`,`SALES_ORDER_NO`,`SOURCE_OUTLET_ID`,`DWH_ONLINE_FLAG`,`ACTIVATION_DATE_ID`,`LOYALTY_ID`,`SRC_CUST_CODE`,`FILE_NAME`,`INS_TIME`)
 
 

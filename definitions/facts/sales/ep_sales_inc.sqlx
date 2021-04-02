@@ -1,0 +1,73 @@
+config {
+  disabled: true,
+  type: "incremental",
+  schema: "ep",
+  name: "sales_old",
+  tags: ["sales"],
+  bigquery: {
+    partitionBy: "DATE_ID"
+  }
+}
+
+pre_operations {
+CREATE SCHEMA IF NOT EXISTS ${dataform.projectConfig.vars.ep_dataset_name};
+}
+
+SELECT
+  S.OUTLET_ID,
+  DATE_ID,
+  PROD_ID,
+  HOUR_ID,
+  DEPOT_ID,
+  SALES_TYP_ID,
+  SALESMAN_ID,
+  SALES_TIME,
+  VOUCHER_NO,
+  SET_NO,
+  CASH_REG_NO,
+  RCPT_NO,
+  ZIP,
+  S.CURR_ID AS CURR_ID,
+  SALES_QTY,
+  SALES_VAL,
+  SALES_VAL_NET,
+  SALES_ROI_VAL,
+  SALES_ORG_VAL,
+  SALES_BONUS,
+  SALES_LAST_INVOICE_VAL,
+  RC_TAX_VAL,
+  PROD_TYP_ID,
+  DISCOUNT_ID,
+  PROD_MARK_1,
+  PROD_MARK_2,
+  PROD_MARK_3,
+  BOOKING_KEY_ID,
+  VAT_ID,
+  RANGE_MARK,
+  PHASEOUT_MARK,
+  SALES_STATUS,
+  SERIAL_NO,
+  SALES_PRICE_MANUAL,
+  SALES_CAMPAIGN_DISCOUNT_ID,
+  CASE
+      WHEN (S.OUTLET_ID IN (741,742,718,719,726)
+        OR S.SOURCE_OUTLET_ID IN (741,742,718,719,726)) THEN LPAD(SALES_ORDER_NO,12, '0')
+      ELSE SALES_ORDER_NO
+  END AS SALES_ORDER_NO,
+  NULL AS SOURCE_OUTLET_ID,
+  DWH_ONLINE_FLAG,
+  ACTIVATION_DATE_ID,
+  LOYALTY_ID,
+  SRC_CUST_CODE,
+  FILE_NAME,
+  CURRENT_TIMESTAMP() as INS_TIME
+FROM ${ref("stg_sales")} S
+
+${ when(incremental(), `where S.FILE_DATE_ID > (select max(DATE_ID) from ${self()})`) }
+-- ${ep_reload_check_fnc.reloadCheck(constants.snapshot_dates, constants.outlet_ids, self() )}
+
+
+
+
+
+
