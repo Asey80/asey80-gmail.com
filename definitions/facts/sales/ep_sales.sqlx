@@ -115,7 +115,7 @@ SELECT
   CURRENT_TIMESTAMP() as INS_TIME
 FROM ${ref("stg_sales")} S
 
--- where S.FILE_DATE_ID IN ('2021-01-27') and S.FILE_OUTLET_ID in (11,44)
+
 ${ep_reload_check_fnc.reloadCheck(constants.snapshot_dates, constants.outlet_ids, self() )}
 ) ;
 

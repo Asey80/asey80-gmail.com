@@ -1,5 +1,5 @@
 function reloadCheck(dates, outlets, tbl) {
-    if (dates || outlets)   {
+    if (dates && outlets)   {
         return `where S.FILE_DATE_ID IN (${dates}) and S.FILE_OUTLET_ID in (${outlets})`}
 
     else if (outlet_ids) {
