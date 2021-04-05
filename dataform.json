@@ -5,6 +5,7 @@
     "defaultDatabase": "dwh-sandbox-309207",
     "vars": {
         "bucket_path": "gs://dwh-sandbox-309207-bucket/",
+        "export_bucket_path": "gs://dwh-sandbox-309207-export/",
         "stg_dataset_name": "stg",
         "external_dataset_name": "ext",
         "ep_dataset_name": "ep"

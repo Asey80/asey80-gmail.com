@@ -1,0 +1,17 @@
+config {
+  type: "operations",
+  tags: ["sales"],
+  hasOutput: true
+}
+
+js {
+  const uri = `${dataform.projectConfig.vars.export_bucket_path}`.concat(name(),'/',name(),'_*.csv');
+}
+
+EXPORT DATA OPTIONS(
+  uri='${uri}',
+  format='CSV',
+  overwrite=true,
+  header=true,
+  field_delimiter=';') AS
+SELECT * FROM ${ref("sales_week")}
