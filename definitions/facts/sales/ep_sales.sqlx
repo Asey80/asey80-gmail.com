@@ -11,6 +11,7 @@ js {
 }
 
 declare partitions_for_replacement array<date>;
+declare outlets array<int64>;
 
  -- create ep table
 CREATE TABLE IF NOT EXISTS ${self()} (
@@ -106,7 +107,7 @@ SELECT
         OR S.SOURCE_OUTLET_ID IN (741,742,718,719,726)) THEN LPAD(SALES_ORDER_NO,12, '0')
       ELSE SALES_ORDER_NO
   END AS SALES_ORDER_NO,
-  NULL AS SOURCE_OUTLET_ID,
+  1 AS SOURCE_OUTLET_ID,
   DWH_ONLINE_FLAG,
   ACTIVATION_DATE_ID,
   LOYALTY_ID,
@@ -129,18 +130,27 @@ set (partitions_for_replacement) = (
     from ${TempTableName}
 );
 
+set (outlets) = (
+    select as struct
+        array_agg(distinct OUTLET_ID)
+    from ${TempTableName}
+);
 /*
   Overwrite partitions in the destination table which match
   the partitions in the temporary table
 */
+
 merge into ${self()} DEST
 using ${TempTableName} SRC
 on FALSE
 
-when not matched by source and date_id in unnest(partitions_for_replacement)
-then delete
-
 when not matched then 
 insert row
+
+when not matched by source 
+and date_id in unnest(partitions_for_replacement)
+and OUTLET_ID in unnest(outlets)
+then delete
+
 
 

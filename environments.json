@@ -3,6 +3,12 @@
     {
       "name": "production",
       "configOverride": {},
+      "schedules": [
+        {
+          "name": "new_schedule",
+          "cron": "4 16 * * *"
+        }
+      ],
       "gitRef": "master"
     }
   ]
